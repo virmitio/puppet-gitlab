@@ -47,16 +47,23 @@ define gitlab::user (
   $dbname = hiera('gitlab::gitlab_dbname'),
   $dbpwd = hiera('gitlab::gitlab_dbpwd'),
 ) {
-  exec {"add-gitlab-user-${username}":
-    command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"insert into users (email, encrypted_password, Sign_in_count, created_at, name, username, admin, projects_limit, can_create_group, can_create_team) values ('${email}', '${pass}', 1, NOW(), '${username}', '${username}', 1, 500, 1, 1)\"",
-    unless  => "/bin/sh -c \"! return `/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"select count(id) from users where email like '${email}'\"`\"",
+  if $email =~ /^.*@.*\..*$/ {
+    if $username =~ /^(.*)@.*$/ {
+      $username = $1
+    }
+    exec {"add-gitlab-user-${username}":
+      command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"insert into users (email, encrypted_password, Sign_in_count, created_at, name, username, admin, projects_limit, can_create_group, can_create_team) values ('${email}', '${pass}', 1, NOW(), '${username}', '${username}', 1, 500, 1, 1)\"",
+      unless  => "/bin/sh -c \"! return `/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"select count(id) from users where (email like '${email}') or (username like '${username}')\"`\"",
+    }
+    $keys = ($ssh_keys.each { |$index, $val|  gitlab::ssh_key{ "${title}-key-${index}": 
+        keystring => $val, 
+        user_email => $email,
+        require => Exec["add-gitlab-user-${username}"],
+        } } 
+    )
+  } else {
+    fail("Error adding user '${email}', not a valid email address.")
   }
-  $keys = ($ssh_keys.each { |$index, $val|  gitlab::ssh_key{ "${title}-key-${index}": 
-      keystring => $val, 
-      user_email => $email,
-      require => Exec["add-gitlab-user-${username}"],
-      } } 
-  )
 }
 
 
