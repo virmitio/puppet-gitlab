@@ -94,6 +94,9 @@ define gitlab::group_user (
 
 define gitlab::block_user (
   $user_email = $title,
+  $dbuser = hiera('gitlab::gitlab_dbuser'),
+  $dbname = hiera('gitlab::gitlab_dbname'),
+  $dbpwd = hiera('gitlab::gitlab_dbpwd'),
 ) {
     exec {"block-gitlab-user-${user_email}":
       command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"update users set state='blocked' where email like '${user_email}'\"",
@@ -103,6 +106,9 @@ define gitlab::block_user (
 
 define gitlab::cripple_user (
   $user_email = $title,
+  $dbuser = hiera('gitlab::gitlab_dbuser'),
+  $dbname = hiera('gitlab::gitlab_dbname'),
+  $dbpwd = hiera('gitlab::gitlab_dbpwd'),
 ) {
     gitlab::block_user {"${user_email}": before => Exec["cripple-gitlab-user-${user_email}"]}
     exec {"cripple-gitlab-user-${user_email}":
