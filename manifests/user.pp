@@ -95,7 +95,7 @@ define gitlab::group_user (
 define gitlab::block_user (
   $user_email = $title,
 ) {
-    exec {"add-gitlab-user-${username}":
+    exec {"block-gitlab-user-${user_email}":
       command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"update users set state='blocked' where email like '${user_email}'\"",
       unless  => "/bin/sh -c \"! return `/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"select count(id)=1 from users where (email like '${user_email}')\"`\"",
     }
@@ -104,7 +104,7 @@ define gitlab::block_user (
 define gitlab::cripple_user (
   $user_email = $title,
 ) {
-    exec {"add-gitlab-user-${username}":
+    exec {"cripple-gitlab-user-${user_email}":
       command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"update users set encrypted_password=NULL where email like '${user_email}'\"",
       unless  => "/bin/sh -c \"! return `/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"select count(id)=1 from users where (email like '${user_email}')\"`\"",
       require => Gitlab::Block_user["${user_email}"],
