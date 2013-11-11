@@ -104,9 +104,9 @@ define gitlab::block_user (
 define gitlab::cripple_user (
   $user_email = $title,
 ) {
+    gitlab::block_user {"${user_email}": before => Exec["cripple-gitlab-user-${user_email}"]}
     exec {"cripple-gitlab-user-${user_email}":
       command => "/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"update users set encrypted_password=NULL where email like '${user_email}'\"",
       unless  => "/bin/sh -c \"! return `/usr/bin/mysql -u${dbuser} -p${dbpwd} -D${dbname} -N -B -e\"select count(id)=1 from users where (email like '${user_email}')\"`\"",
-      require => Gitlab::Block_user["${user_email}"],
     }
 }
